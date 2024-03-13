@@ -1,0 +1,1 @@
+export const MONGO_URL = 'mongodb+srv://bhaveshranjanswork:W5yBBHvoWpec90ml@cluster0.ttlfakw.mongodb.net/foodorderapp';
