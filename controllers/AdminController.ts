@@ -2,7 +2,15 @@ import { Request, Response, NextFunction } from 'express'
 import { CreateVendorInput } from '../dto'
 import { GeneratePassword, GenerateSalt } from '../utility';
 import {Vendor} from '../models'
+import { findAncestor } from 'typescript';
 
+export const FindVendor = async (id:string | undefined, email ?: string) =>{
+    if(email){
+        return await Vendor.findOne({email: email})
+    }else{
+        return await Vendor.findById(id)
+    }
+}
 
 export const CreateVendor = async (req: Request, res: Response, next: NextFunction) => {
 
@@ -10,7 +18,7 @@ export const CreateVendor = async (req: Request, res: Response, next: NextFuncti
     
 
 
-    const existingVendor = await Vendor.findOne({email: email})
+    const existingVendor = await FindVendor('',email);
     if(existingVendor !== null){
         return res.json({ "message": "A vendor is exist with this email ID"})
     }
@@ -47,9 +55,22 @@ export const CreateVendor = async (req: Request, res: Response, next: NextFuncti
 
 
 export const GetVendors = async (req: Request, res: Response, next: NextFunction) => {
-
+ const Vendors = await Vendor.find()
+ if(Vendors !== null){
+    return res.json(Vendors)
+ }
+ return res.json({"Message" : "Vendors data not available"})
 }
 
 export const GetVendorByID = async (req: Request, res: Response, next: NextFunction) => {
 
+    const VendorId = req.params.id;
+
+    const vendor = await FindVendor(VendorId);
+
+    if(vendor !== null){
+        return res.json(vendor);
+    }
+
+    return res.json({"message": "Vendors data is not avaialable"})
 }
