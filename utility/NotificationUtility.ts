@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 //Email
 
 //notification
@@ -14,8 +16,8 @@ export const GenerateOtp =()=>{
 
 export const onRequestOTP = async(otp: number, toPhoneNumber: string)=> {
 
-    const accountSid = "AC0d404ee1e82650935f6ba092b4cab508";
-    const authToken = "836c2fc753b5a9495ec43d85d834cec9";
+    const accountSid = process.env.TwilioAccSID;
+    const authToken = process.env.TwilioAuthToken;
     const client = require('twilio')(accountSid, authToken);
 
     const response = await client.messages.create({
