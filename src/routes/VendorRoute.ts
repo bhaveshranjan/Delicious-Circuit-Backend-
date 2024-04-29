@@ -1,7 +1,8 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { AddFoods, GetFoods, GetVendorProfile, UpdateVendorCoverImage, UpdateVendorProfile, UpdateVendorService, VendorLogin } from '../controllers';
+import { GetCurrentOrders,AddFoods, GetFoods, GetOrderDetails, GetVendorProfile, ProcessOrder, UpdateVendorCoverImage, UpdateVendorProfile, UpdateVendorService, VendorLogin, AddOffer, GetOffers, EditOffer } from '../controllers';
 import { Authenticate } from '../middlewares';
 import multer from 'multer';
+import { GetOrders } from '../controllers/CustomerController';
 
 
 
@@ -27,10 +28,18 @@ router.patch('/service',UpdateVendorService)
 
 router.post('/food',images,AddFoods)
 router.get('/foods',GetFoods)
-router.get('/',(req: Request, res: Response, next: NextFunction) =>{
 
-    res.json({message: "Hello from Vendor"})
-})
 
+//orders
+router.get('/orders',GetCurrentOrders);
+router.put('/order/:id/process',ProcessOrder);
+router.get('/order/:id',GetOrderDetails);
+
+//Offers
+router.get('/offers', GetOffers);
+router.post('/offer',AddOffer);
+router.put('/offer/:id',EditOffer);
+
+//delete offers
 
 export {router as VendorRoute};

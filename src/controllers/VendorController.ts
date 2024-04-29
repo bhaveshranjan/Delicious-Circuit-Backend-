@@ -1,8 +1,10 @@
 import{Request, Response, NextFunction} from 'express'
-import { EditvendorInput, VendorLoginInputs, CreateFoodInput } from '../dto'
+import { EditvendorInput, VendorLoginInputs, CreateFoodInput, CreateOfferInputs } from '../dto'
 import { FindVendor } from './AdminController';
 import { GeneratePassword, GenerateSignature, ValidatePassword } from '../utility';
-import { Food} from '../models';
+import { Food ,Offer} from '../models';
+import { Order } from '../models/Order';
+import { Vendor } from '../models/Vendor';
 
 
 
@@ -86,10 +88,17 @@ export const UpdateVendorCoverImage = async (req: Request, res: Response, next: 
 export const UpdateVendorService = async (req: Request, res: Response, next: NextFunction)=>{
     const user = req.user;
 
+    const {lat, lng} = req.body;
+
     if(user){
         const existingVendor = await FindVendor(user._id)
         if(existingVendor !== null){
             existingVendor.serviceAvailable = !existingVendor.serviceAvailable;
+
+            if(lat && lng){
+                existingVendor.lat = lat;
+                existingVendor.lng = lng;
+            }
             const savedResult = await existingVendor.save()
             return res.json(savedResult);
         }
@@ -143,4 +152,177 @@ export const GetFoods = async (req: Request, res: Response, next: NextFunction)=
        }
     }
     return res.json({"message":"Food Information Not Found"})
+}
+
+export const GetCurrentOrders = async (req: Request, res: Response, next:NextFunction) =>{
+
+    const user = req.user;
+
+    if(user){
+
+        const orders = await Order.find({vendorId: user._id});
+
+        if(orders != null){
+            return res.status(200).json(orders);
+        }
+    }
+}
+
+export const GetOrderDetails = async (req: Request, res: Response, next:NextFunction) =>{
+    const orderId = req.params.id;
+
+    if(orderId){
+
+        const order = await Order.findById(orderId).populate('items.food');
+
+        if(order != null){
+            return res.status(200).json(order);
+        }
+    }
+    
+    return res.json({"message":"Order not found"})
+}
+
+export const ProcessOrder = async (req: Request, res: Response, next: NextFunction) => {
+
+    const orderId = req.params.id;
+
+    const { status, remarks, time } = req.body;
+
+    if (orderId) {
+        const order = await Order.findById(orderId);
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        order.orderStatus = status;
+        order.remarks = remarks;
+        if (time) {
+            order.readyTime = time;
+        }
+
+        const orderResult = await order.save();
+
+        if (orderResult != null) {
+            return res.status(200).json(orderResult);
+        }
+    }
+
+    return res.json({ message: 'Unable to process order' });
+};
+
+export const GetOffers = async(req: Request, res: Response, next: NextFunction)=>{
+
+    const user = req.user;
+
+    if(user){
+
+        const offers = await Offer.find();
+        let currentOffers = Array();
+
+        if(offers){
+
+           
+
+            offers.map(item =>{
+                if(item.vendors){
+                    item.vendors.map(vendor =>{
+                        if(vendor._id.toString()=== user._id){
+                            currentOffers.push(item);
+                        }
+                    })
+                }
+
+                if(item.offerType === "GENERIC"){
+                    currentOffers.push(item);
+                }
+            })
+        }
+        return res.json(currentOffers)
+    }
+    return res.json({"message": "offers not available"})
+}
+
+export const AddOffer = async(req: Request, res: Response, next: NextFunction)=>{
+    const user = req.user;
+
+    if(user){
+
+        const { title, description, offerType, offerAmount, pincode,
+        promocode,promoType, startValidity, endValidity, bank, bins, minValue, isActive} = <CreateOfferInputs> req.body;
+
+        const vendor = await FindVendor(user._id);
+
+        if(vendor){
+            
+
+            const offer = await Offer.create({
+                title,
+                description,
+                offerType,
+                offerAmount,
+                pincode,
+                promocode,
+                promoType,
+                startValidity,
+                endValidity,
+                bank,
+                bins,
+                isActive,
+                minValue,
+                vendors: [vendor]
+            })
+            console.log(offer);
+
+            return res.status(200).json(offer);
+        }
+
+    }
+
+    return res.json({"message": "unable to Add Offer"})
+
+}
+
+export const EditOffer = async(req: Request, res: Response, next: NextFunction)=>{
+    
+    const user = req.user;
+    const offerId = req.params.id;
+
+    if(user){
+
+        const { title, description, offerType, offerAmount, pincode,
+        promocode,promoType, startValidity, endValidity, bank, bins, minValue, isActive} = <CreateOfferInputs> req.body;
+
+        const currentOffer = await Offer.findById(offerId);
+
+        if(currentOffer){
+
+            const vendor = await FindVendor(user._id);
+
+            if(vendor){
+            
+
+                currentOffer.title = title,
+                currentOffer.description = description,
+                currentOffer.offerType = offerType,
+                currentOffer.offerAmount = offerAmount,
+                currentOffer.pincode = pincode,
+                currentOffer.promocode = promocode,
+                currentOffer.promoType = promoType,
+                currentOffer.startValidity = startValidity,
+                currentOffer.endValidity = endValidity,
+                currentOffer.bank = bank,
+                currentOffer.bins = bins,
+                currentOffer.isActive = isActive,
+                currentOffer.minValue = minValue
+
+                const result = await currentOffer.save();
+
+                return res.json(result);
+                }
+    
+        }
+        
+    }
+    return res.json({"message":"Unale to edit this offer"})
 }

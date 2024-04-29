@@ -1,4 +1,4 @@
-
+require("dotenv").config();
 //Email
 
 //notification
@@ -15,13 +15,13 @@ export const GenerateOtp =()=>{
 
 export const onRequestOTP = async(otp: number, toPhoneNumber: string)=> {
 
-    const accountSid = "AC0d404ee1e82650935f6ba092b4cab508";
-    const authToken = "02644805d088d963ef53b3577311fe0e";
+    const accountSid = process.env.Twilio_SID
+    const authToken = process.env.Twilio_Account_Token
     const client = require('twilio')(accountSid, authToken);
 
     const response = await client.messages.create({
         body: `Your OTP for Delicious Circuit to create account is ${otp}`,
-        from: '+16593007585',
+        from: process.env.Twilio_Phone_Number,
         to: `+91${toPhoneNumber}`,
     })
 
